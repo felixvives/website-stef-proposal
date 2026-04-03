@@ -556,8 +556,9 @@
   });
 
   function openTimeline() {
-    // Set today's date on the last item
-    const d = new Date();
+    // Set today's date on the last item. 
+    // const d = new Date(); Comment to reflect real date. 
+    const d = new Date('2026-03-22');
     const opts = { year: 'numeric', month: 'long', day: 'numeric' };
     document.getElementById('tl-today-date').textContent = d.toLocaleDateString('en-US', opts);
     document.getElementById('timeline-overlay').classList.add('visible');
