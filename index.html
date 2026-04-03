@@ -1,0 +1,744 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Will you marry me?</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=Montserrat:wght@200;300;400&display=swap" rel="stylesheet"/>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg1: #3a3d4a;
+    --bg2: #2a2d38;
+    --bg3: #1e2028;
+    --glass: rgba(255,255,255,0.04);
+    --border: rgba(255,255,255,0.1);
+    --text: #f0ede8;
+    --muted: rgba(240,237,232,0.45);
+    --faint: rgba(240,237,232,0.18);
+  }
+
+  html, body {
+    height: 100%;
+    font-family: 'Montserrat', sans-serif;
+    background: var(--bg1);
+    color: var(--text);
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 60% 50% at 30% 40%, rgba(100,90,120,0.35) 0%, transparent 70%),
+      radial-gradient(ellipse 50% 60% at 75% 65%, rgba(80,70,100,0.25) 0%, transparent 70%),
+      linear-gradient(160deg, #42454f 0%, #2e3040 40%, #1e2130 100%);
+    z-index: 0;
+  }
+
+  #starCanvas {
+    position: fixed; inset: 0;
+    pointer-events: none; z-index: 1;
+  }
+
+  .page {
+    display: none; min-height: 100vh;
+    position: relative; z-index: 2;
+    flex-direction: column; align-items: center; justify-content: center;
+    padding: 3rem 2rem;
+  }
+  .page.active { display: flex; }
+
+  /* ══ MAIN ══ */
+  #page-main { gap: 0; text-align: center; }
+
+  .heart-icon-wrap {
+    margin-bottom: 2.5rem;
+    display: flex; flex-direction: column; align-items: center;
+    animation: fadeDown 1s ease both;
+  }
+  .heart-circle {
+    width: 64px; height: 64px;
+    border: 1px solid var(--border); border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    animation: float 4s ease-in-out infinite;
+  }
+  .heart-circle svg { width: 22px; height: 22px; stroke: var(--text); fill: none; stroke-width: 1.2; }
+  .heart-stem { width: 1px; height: 40px; background: linear-gradient(to bottom, var(--border), transparent); }
+  @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
+
+  .h-line {
+    width: min(520px, 80vw); height: 1px;
+    background: var(--border); margin-bottom: 3rem;
+    animation: fadeIn 1.2s ease 0.3s both;
+  }
+
+  .question-wrap { animation: fadeIn 1s ease 0.5s both; margin-bottom: 0.8rem; }
+  .question-en {
+    font-family: 'Montserrat', sans-serif; font-weight: 200;
+    font-size: clamp(1.3rem, 4.5vw, 2.1rem);
+    letter-spacing: 0.35em; text-transform: uppercase;
+    color: var(--text); line-height: 1.3;
+  }
+  .question-es {
+    font-family: 'Cormorant Garamond', serif; font-style: italic;
+    font-weight: 300; font-size: clamp(1rem, 3vw, 1.25rem);
+    color: var(--muted); margin-top: 0.5rem; letter-spacing: 0.06em;
+  }
+  .sub-msg {
+    font-weight: 300; font-size: clamp(0.58rem, 1.6vw, 0.68rem);
+    letter-spacing: 0.2em; text-transform: uppercase;
+    color: var(--muted); margin-bottom: 3rem;
+    animation: fadeIn 1s ease 0.7s both;
+  }
+
+  .bottom-section { width: min(520px, 80vw); animation: fadeIn 1s ease 0.9s both; }
+  .b-line-wrap {
+    display: grid; grid-template-columns: 1fr 1px 1fr;
+    align-items: center;
+  }
+  .b-line { height: 1px; background: var(--border); }
+  .b-vert { width: 1px; height: 40px; background: var(--border); }
+  .btn-row { display: grid; grid-template-columns: 1fr 1fr; border: 1px solid var(--border); }
+  .btn {
+    font-family: 'Montserrat', sans-serif; font-weight: 300;
+    font-size: clamp(0.62rem, 1.8vw, 0.72rem); letter-spacing: 0.3em;
+    text-transform: uppercase; color: var(--text);
+    background: transparent; border: none; padding: 1.2rem 1rem;
+    cursor: pointer; transition: background 0.25s;
+  }
+  .btn-yes { border-right: 1px solid var(--border); }
+  .btn-yes:hover { background: rgba(255,255,255,0.07); }
+  .btn-no:hover  { background: rgba(255,255,255,0.03); color: var(--muted); }
+
+  /* ══ YES PAGE ══ */
+  #page-yes { gap: 0; text-align: center; animation: fadeIn 0.9s ease both; }
+
+  .yes-heart-wrap { margin-bottom: 2rem; }
+  .yes-heart-circle {
+    width: 72px; height: 72px; border: 1px solid var(--border); border-radius: 50%;
+    display: flex; align-items: center; justify-content: center; margin: 0 auto;
+    animation: float 3s ease-in-out infinite, pop 0.6s cubic-bezier(.36,.07,.19,.97) both;
+  }
+  .yes-heart-circle svg { width: 26px; height: 26px; stroke: var(--text); fill: none; stroke-width: 1.2; }
+  @keyframes pop { 0%{transform:scale(0)} 70%{transform:scale(1.2)} 100%{transform:scale(1)} }
+
+  .yes-top-line { width: min(560px, 88vw); height: 1px; background: var(--border); margin-bottom: 2rem; }
+
+  .yes-title-wrap { margin-bottom: 0.8rem; }
+  .yes-en {
+    font-family: 'Montserrat', sans-serif; font-weight: 200;
+    letter-spacing: 0.35em; text-transform: uppercase;
+    font-size: clamp(1.1rem, 4vw, 1.9rem); color: var(--text);
+  }
+  .yes-es {
+    font-family: 'Cormorant Garamond', serif; font-style: italic;
+    font-size: clamp(0.9rem, 2.5vw, 1.1rem); color: var(--muted);
+    margin-top: 0.3rem; letter-spacing: 0.06em;
+  }
+  .yes-msg {
+    font-weight: 300; font-size: clamp(0.6rem, 1.6vw, 0.68rem);
+    letter-spacing: 0.15em; text-transform: uppercase;
+    color: var(--muted); max-width: 380px; line-height: 2.2;
+    margin-bottom: 2.5rem;
+  }
+
+  .milestones-panel {
+    width: min(560px, 88vw);
+    border: 1px solid var(--border);
+    background: rgba(15,17,25,0.6);
+    backdrop-filter: blur(12px);
+    padding: 2rem 2rem 2rem;
+  }
+  .panel-title {
+    font-family: 'Montserrat', sans-serif; font-weight: 200;
+    font-size: 0.7rem; letter-spacing: 0.4em; text-transform: uppercase;
+    color: var(--text); margin-bottom: 0.4rem; text-align: left;
+  }
+  .panel-line { width: 36px; height: 1px; background: var(--border); margin-bottom: 1.8rem; }
+
+  .milestones-grid { display: grid; grid-template-columns: repeat(3, 1fr); }
+  .milestone-item {
+    display: flex; flex-direction: column; align-items: center;
+    gap: 0.6rem; padding: 0.5rem 0.25rem;
+    border-right: 1px solid var(--border);
+  }
+  .milestone-item:last-child { border-right: none; }
+  .milestone-item svg { width: 20px; height: 20px; stroke: var(--muted); fill: none; stroke-width: 1.2; }
+  .milestone-days {
+    font-family: 'Montserrat', sans-serif; font-weight: 300;
+    font-size: clamp(0.78rem, 2.2vw, 0.95rem);
+    color: var(--text); letter-spacing: 0.03em;
+  }
+  .milestone-days .unit { font-size: 0.65em; color: var(--muted); margin-left: 2px; }
+  .milestone-label {
+    font-size: 0.52rem; letter-spacing: 0.14em;
+    text-transform: uppercase; color: var(--muted);
+    text-align: center; line-height: 1.7;
+  }
+
+  /* ══ NO PAGE ══ */
+  #page-no { gap: 1.8rem; text-align: center; animation: fadeIn 0.6s ease both; }
+  .no-title {
+    font-family: 'Montserrat', sans-serif; font-weight: 200;
+    letter-spacing: 0.3em; text-transform: uppercase;
+    font-size: clamp(1.1rem, 4vw, 1.9rem); color: var(--text);
+  }
+  .no-sub {
+    font-family: 'Cormorant Garamond', serif; font-style: italic;
+    font-size: clamp(0.9rem, 2.5vw, 1.1rem); color: var(--muted);
+    letter-spacing: 0.06em;
+  }
+  .btn-retry {
+    font-family: 'Montserrat', sans-serif; font-weight: 300;
+    font-size: 0.68rem; letter-spacing: 0.3em; text-transform: uppercase;
+    color: var(--text); background: transparent;
+    border: 1px solid var(--border); padding: 1rem 2.5rem;
+    cursor: pointer; transition: background 0.25s; margin-top: 0.5rem;
+  }
+  .btn-retry:hover { background: rgba(255,255,255,0.06); }
+
+  .footer {
+    position: fixed; bottom: 1.8rem; left: 0; right: 0;
+    text-align: center; font-size: 0.58rem; letter-spacing: 0.2em;
+    text-transform: uppercase; color: var(--faint); z-index: 3;
+  }
+
+  @keyframes fadeIn  { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+  @keyframes fadeDown{ from{opacity:0;transform:translateY(-10px)} to{opacity:1;transform:translateY(0)} }
+
+  @media (max-width: 480px) {
+    .milestones-grid { grid-template-columns: 1fr; }
+    .milestone-item { border-right: none; border-bottom: 1px solid var(--border); padding: 1.2rem 0; }
+    .milestone-item:last-child { border-bottom: none; }
+    .question-en { letter-spacing: 0.12em; }
+  }
+
+  /* ══ HIDDEN TIMELINE ══ */
+  #timeline-overlay {
+    position: fixed; inset: 0; z-index: 100;
+    display: flex; align-items: flex-end; justify-content: center;
+    pointer-events: none; opacity: 0;
+    transition: opacity 0.5s ease;
+  }
+  #timeline-overlay.visible {
+    opacity: 1; pointer-events: all;
+  }
+  #timeline-backdrop {
+    position: absolute; inset: 0;
+    background: rgba(10, 12, 18, 0.75);
+    backdrop-filter: blur(6px);
+  }
+  #timeline-panel {
+    position: relative; z-index: 2;
+    width: min(480px, 90vw);
+    max-height: 82vh;
+    overflow-y: auto;
+    background: rgba(15, 17, 25, 0.92);
+    border: 1px solid var(--border);
+    border-bottom: none;
+    padding: 2.5rem 2rem 3rem;
+    transform: translateY(100%);
+    transition: transform 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+  }
+  #timeline-panel::-webkit-scrollbar { width: 3px; }
+  #timeline-panel::-webkit-scrollbar-track { background: transparent; }
+  #timeline-panel::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+  #timeline-overlay.visible #timeline-panel {
+    transform: translateY(0);
+  }
+  .tl-header {
+    display: flex; justify-content: space-between; align-items: flex-start;
+    margin-bottom: 0.4rem;
+  }
+  .tl-title {
+    font-family: 'Montserrat', sans-serif; font-weight: 200;
+    font-size: 0.68rem; letter-spacing: 0.4em; text-transform: uppercase;
+    color: var(--text);
+  }
+  .tl-close {
+    background: none; border: none; color: var(--muted);
+    font-size: 1rem; cursor: pointer; line-height: 1;
+    padding: 0; transition: color 0.2s;
+  }
+  .tl-close:hover { color: var(--text); }
+  .tl-header-line { width: 36px; height: 1px; background: var(--border); margin-bottom: 2rem; }
+
+  .timeline {
+    display: flex; flex-direction: column; gap: 0;
+    padding-left: 1rem;
+  }
+  .tl-item {
+    display: grid;
+    grid-template-columns: 1px 1.5rem 1fr;
+    gap: 0 1rem;
+    align-items: stretch;
+    position: relative;
+  }
+  .tl-line-col {
+    display: flex; flex-direction: column; align-items: center;
+    width: 1px;
+  }
+  .tl-line-seg {
+    width: 1px; flex: 1; min-height: 12px;
+    background: var(--border);
+  }
+  .tl-dot-wrap {
+    display: flex; align-items: center; justify-content: center;
+    padding: 3px 0;
+  }
+  .tl-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    border: 1px solid var(--muted); background: transparent;
+    flex-shrink: 0;
+    transition: border-color 0.3s, background 0.3s;
+  }
+  .tl-item.highlight .tl-dot {
+    border-color: var(--text); background: var(--text);
+  }
+  .tl-icon-col {
+    display: flex; align-items: flex-start; padding-top: 1px;
+  }
+  .tl-icon-col svg {
+    width: 14px; height: 14px; stroke: var(--muted); fill: none; stroke-width: 1.3;
+    flex-shrink: 0; margin-top: 2px;
+  }
+  .tl-item.highlight .tl-icon-col svg { stroke: var(--text); }
+  .tl-content { padding-bottom: 2rem; }
+  .tl-item:last-child .tl-content { padding-bottom: 0; }
+  .tl-date {
+    font-family: 'Montserrat', sans-serif; font-weight: 300;
+    font-size: 0.58rem; letter-spacing: 0.2em; text-transform: uppercase;
+    color: var(--muted); margin-bottom: 0.25rem;
+  }
+  .tl-label-en {
+    font-family: 'Montserrat', sans-serif; font-weight: 300;
+    font-size: 0.72rem; letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--text); margin-bottom: 0.1rem;
+  }
+  .tl-item.highlight .tl-label-en { color: var(--text); }
+  .tl-label-es {
+    font-family: 'Cormorant Garamond', serif; font-style: italic;
+    font-size: 0.82rem; color: var(--muted); letter-spacing: 0.02em;
+    line-height: 1.6; margin-top: 0.15rem;
+  }
+  .tl-item.highlight .tl-label-es {
+    font-family: 'Montserrat', sans-serif; font-style: normal;
+    font-size: 0.62rem; letter-spacing: 0.2em; text-transform: uppercase;
+  }
+
+  /* Heart click hint — invisible but cursor changes */
+  #heart-tap-zone { cursor: pointer; }
+</style>
+</head>
+<body>
+
+<canvas id="starCanvas"></canvas>
+
+<!-- MAIN -->
+<div id="page-main" class="page active">
+  <div class="heart-icon-wrap" id="heart-tap-zone">
+    <div class="heart-circle">
+      <svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+    </div>
+    <div class="heart-stem"></div>
+  </div>
+
+  <div class="h-line"></div>
+
+  <div class="question-wrap">
+    <div class="question-en">Will you marry me?</div>
+    <div class="question-es">¿Puedo ser tu esposo?</div>
+  </div>
+  <div class="sub-msg">Stef &amp; Félix &nbsp;·&nbsp; Forever starts now</div>
+
+  <div class="bottom-section">
+    <div class="b-line-wrap">
+      <div class="b-line"></div>
+      <div class="b-vert"></div>
+      <div class="b-line"></div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-yes" onclick="showYes()">Yes</button>
+      <button class="btn btn-no" id="btn-no" onclick="showNo()">No</button>
+    </div>
+  </div>
+</div>
+
+<!-- YES -->
+<div id="page-yes" class="page">
+  <div class="yes-heart-wrap">
+    <div class="yes-heart-circle">
+      <svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+    </div>
+  </div>
+
+  <div class="yes-top-line"></div>
+
+  <div class="yes-title-wrap">
+    <div class="yes-en">She said yes</div>
+    <!-- <div class="yes-es">Dijo que sí</div> -->
+  </div>
+  <div class="yes-msg">
+    From our first kiss to forever —<br/>
+    every moment with you has been my favourite.<br/>
+    I love you!
+  </div>
+
+  <div class="milestones-panel">
+    <div class="panel-title">Yes</div>
+    <div class="panel-line"></div>
+    <div class="milestones-grid">
+
+      <div class="milestone-item">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="9" y1="9" x2="9.01" y2="9" stroke-width="2.5" stroke-linecap="round"/><line x1="15" y1="9" x2="15.01" y2="9" stroke-width="2.5" stroke-linecap="round"/><circle cx="12" cy="15" r="1.5"/><path d="M17.5 5 C17.5 4 18.3 3.5 19 4.5 C19.7 3.5 20.5 4 20.5 5 C20.5 6.2 19 7 19 7 C19 7 17.5 6.2 17.5 5Z"/></svg>
+        <div class="milestone-days" id="cd-kiss">—<span class="unit">days</span></div>
+        <div class="milestone-label">First Kiss</div>
+      </div>
+
+      <div class="milestone-item">
+        <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        <div class="milestone-days" id="cd-dating">—<span class="unit">days</span></div>
+        <div class="milestone-label">Started Dating</div>
+      </div>
+
+      <div class="milestone-item">
+        <svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+        <div class="milestone-days" id="cd-official">—<span class="unit">days</span></div>
+        <div class="milestone-label">Became Official</div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- NO -->
+<div id="page-no" class="page">
+  <div class="heart-icon-wrap" style="animation:none;">
+    <div class="heart-circle" style="animation:float 4s ease-in-out infinite;">
+      <svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" stroke="var(--text)" fill="none" stroke-width="1.2"/></svg>
+    </div>
+    <div class="heart-stem"></div>
+  </div>
+
+  <div class="h-line" style="animation:none;opacity:1;"></div>
+
+  <div class="question-wrap" style="animation:none;opacity:1;margin-bottom:0.8rem;">
+    <div class="question-en" style="font-size:clamp(1rem,3.5vw,1.6rem);">That's okay.</div>
+    <div class="question-es">Está bien.</div>
+  </div>
+
+  <div class="sub-msg" style="animation:none;opacity:1;max-width:400px;line-height:2;margin-bottom:3rem;text-transform:none;letter-spacing:0.08em;font-size:clamp(0.65rem,1.8vw,0.75rem);">
+    We can still enjoy life together anyway —<br/>
+    <em style="font-family:'Cormorant Garamond',serif;font-style:italic;font-size:1.2em;letter-spacing:0.04em;">igual podemos disfrutar la vida juntos.</em>
+  </div>
+
+  <div class="bottom-section">
+    <div class="b-line-wrap">
+      <div class="b-line"></div>
+      <div class="b-vert"></div>
+      <div class="b-line"></div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-yes" onclick="showMain()" style="border-right:1px solid var(--border);">Ask again &nbsp;/&nbsp; Preguntar de nuevo</button>
+      <button class="btn btn-no" style="cursor:default;color:var(--muted);">Always yours</button>
+    </div>
+  </div>
+</div>
+
+<div class="footer">© Made with love by Félix</div>
+
+<script>
+  // Stars
+  const canvas = document.getElementById('starCanvas');
+  const ctx = canvas.getContext('2d');
+  function resize(){ canvas.width=window.innerWidth; canvas.height=window.innerHeight; }
+  resize(); window.addEventListener('resize', resize);
+
+  const stars = Array.from({length:100},()=>({
+    x:Math.random()*window.innerWidth, y:Math.random()*window.innerHeight,
+    r:Math.random()*1.1+0.3, alpha:Math.random(),
+    delta:(Math.random()*0.004+0.001)*(Math.random()<.5?1:-1)
+  }));
+  const sparkles=[];
+  setInterval(()=>sparkles.push({
+    x:Math.random()*canvas.width, y:canvas.height+5,
+    char:['✦','✧','⋆','·'][Math.floor(Math.random()*4)],
+    size:Math.random()*5+3, speed:Math.random()*0.5+0.2, alpha:0.55
+  }),900);
+
+  function draw(){
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    stars.forEach(s=>{
+      s.alpha+=s.delta; if(s.alpha>1||s.alpha<0)s.delta*=-1;
+      ctx.beginPath(); ctx.arc(s.x,s.y,s.r,0,Math.PI*2);
+      ctx.fillStyle=`rgba(200,195,210,${s.alpha*0.22})`; ctx.fill();
+    });
+    for(let i=sparkles.length-1;i>=0;i--){
+      const sp=sparkles[i]; sp.y-=sp.speed; sp.alpha-=0.0015;
+      if(sp.alpha<=0){sparkles.splice(i,1);continue;}
+      ctx.globalAlpha=sp.alpha; ctx.font=`${sp.size}px serif`;
+      ctx.fillStyle='#c8c2d4'; ctx.fillText(sp.char,sp.x,sp.y);
+    }
+    ctx.globalAlpha=1; requestAnimationFrame(draw);
+  }
+  draw();
+
+  // Countdowns
+  const dates=[
+    {id:'cd-kiss',    date:new Date('2019-06-28')},
+    {id:'cd-dating',  date:new Date('2019-07-19')},
+    {id:'cd-official',date:new Date('2019-09-14')}
+  ];
+  function updateCDs(){
+    const now=new Date();
+    dates.forEach(m=>{
+      const d=Math.floor((now-m.date)/(1000*60*60*24));
+      const el=document.getElementById(m.id);
+      if(el)el.innerHTML=`${d.toLocaleString()}<span class="unit"> days</span>`;
+    });
+  }
+  updateCDs(); setInterval(updateCDs,60000);
+
+  // Navigation
+  function showPage(id){
+    document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    window.scrollTo(0,0);
+  }
+  function showYes(){ showPage('page-yes'); burst(); }
+  function showNo(){ showPage('page-no'); }
+  function showMain(){ showPage('page-main'); }
+
+  // No button runs away
+  let escapes = 0;
+  function runAway(btn) {
+    if (escapes >= 6) { showNo(); return; }
+    btn.style.position = 'fixed';
+    btn.style.zIndex = 999;
+    btn.style.transition = 'top 0.25s, left 0.25s';
+    const p = 60;
+    btn.style.left = (p + Math.random() * (window.innerWidth  - btn.offsetWidth  - p * 2)) + 'px';
+    btn.style.top  = (p + Math.random() * (window.innerHeight - btn.offsetHeight - p * 2)) + 'px';
+    escapes++;
+  }
+
+  // Burst on yes
+  function burst(){
+    const chars=['✦','·','⋆','✧'];
+    for(let i=0;i<18;i++){
+      const el=document.createElement('div');
+      el.textContent=chars[Math.floor(Math.random()*chars.length)];
+      el.style.cssText=`position:fixed;pointer-events:none;z-index:9999;
+        left:${Math.random()*100}vw;top:${Math.random()*60+20}vh;
+        font-size:${Math.random()*12+6}px;color:rgba(200,195,210,0.65);
+        animation:floatUp 2s ease forwards;animation-delay:${Math.random()*0.8}s;`;
+      document.body.appendChild(el);
+      setTimeout(()=>el.remove(),3000);
+    }
+  }
+
+  // ── HIDDEN TIMELINE (triple-tap the heart) ──
+  let heartTaps = 0, heartTimer = null;
+  document.getElementById('heart-tap-zone').addEventListener('click', function() {
+    heartTaps++;
+    clearTimeout(heartTimer);
+    if (heartTaps >= 3) {
+      heartTaps = 0;
+      openTimeline();
+    } else {
+      heartTimer = setTimeout(() => heartTaps = 0, 800);
+    }
+  });
+
+  function openTimeline() {
+    // Set today's date on the last item
+    const d = new Date();
+    const opts = { year: 'numeric', month: 'long', day: 'numeric' };
+    document.getElementById('tl-today-date').textContent = d.toLocaleDateString('en-US', opts);
+    document.getElementById('timeline-overlay').classList.add('visible');
+    document.body.style.overflow = 'hidden';
+  }
+  function closeTimeline() {
+    document.getElementById('timeline-overlay').classList.remove('visible');
+    document.body.style.overflow = '';
+  }
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeTimeline(); });
+
+  const s=document.createElement('style');
+  s.textContent=`@keyframes floatUp{0%{opacity:.8;transform:translateY(0)}100%{opacity:0;transform:translateY(-70px)}}`;
+  document.head.appendChild(s);
+</script>
+
+<!-- HIDDEN TIMELINE -->
+<div id="timeline-overlay">
+  <div id="timeline-backdrop" onclick="closeTimeline()"></div>
+  <div id="timeline-panel">
+    <div class="tl-header">
+      <span class="tl-title">Our story</span>
+      <button class="tl-close" onclick="closeTimeline()">✕</button>
+    </div>
+    <div class="tl-header-line"></div>
+
+    <div class="timeline">
+
+      <div class="tl-item">
+        <div class="tl-line-col">
+          <div class="tl-line-seg" style="min-height:0;flex:0 0 8px;background:transparent;"></div>
+          <div class="tl-dot-wrap"><div class="tl-dot"></div></div>
+          <div class="tl-line-seg"></div>
+        </div>
+        <div class="tl-icon-col">
+          <svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+        </div>
+        <div class="tl-content">
+          <div class="tl-date">September 30, 2025</div>
+          <div class="tl-label-en">The Decision</div>
+          <div class="tl-label-es">I knew — you were the one I wanted to spend my life with. The planning began.</div>
+        </div>
+      </div>
+
+      <div class="tl-item">
+        <div class="tl-line-col">
+          <div class="tl-dot-wrap"><div class="tl-dot"></div></div>
+          <div class="tl-line-seg"></div>
+        </div>
+        <div class="tl-icon-col">
+          <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        </div>
+        <div class="tl-content">
+          <div class="tl-date">October 6, 2025</div>
+          <div class="tl-label-en">The First to Know</div>
+          <div class="tl-label-es">Leo became my accomplice. The secret had officially begun.</div>
+        </div>
+      </div>
+
+      <div class="tl-item">
+        <div class="tl-line-col">
+          <div class="tl-dot-wrap"><div class="tl-dot"></div></div>
+          <div class="tl-line-seg"></div>
+        </div>
+        <div class="tl-icon-col">
+          <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+        </div>
+        <div class="tl-content">
+          <div class="tl-date">December 22, 2025</div>
+          <div class="tl-label-en">The Plan Takes Shape</div>
+          <div class="tl-label-es">Leo and I sat down and mapped out every detail of the itinerary.</div>
+        </div>
+      </div>
+
+      <div class="tl-item">
+        <div class="tl-line-col">
+          <div class="tl-dot-wrap"><div class="tl-dot"></div></div>
+          <div class="tl-line-seg"></div>
+        </div>
+        <div class="tl-icon-col">
+          <svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.4 2 2 0 0 1 3.6 1.22h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.81a16 16 0 0 0 6 6l.91-.91a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+        </div>
+        <div class="tl-content">
+          <div class="tl-date">January 6, 2026</div>
+          <div class="tl-label-en">The Flight</div>
+          <div class="tl-label-es">I booked a flight to San Pedro, Atacama — a quiet trip you knew nothing about.</div>
+        </div>
+      </div>
+
+      <div class="tl-item">
+        <div class="tl-line-col">
+          <div class="tl-dot-wrap"><div class="tl-dot"></div></div>
+          <div class="tl-line-seg"></div>
+        </div>
+        <div class="tl-icon-col">
+          <svg viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+        </div>
+        <div class="tl-content">
+          <div class="tl-date">January 20, 2026</div>
+          <div class="tl-label-en">The Setup</div>
+          <div class="tl-label-es">I arranged the photo shoot and the tour so you'd never see it coming.</div>
+        </div>
+      </div>
+
+      <div class="tl-item">
+        <div class="tl-line-col">
+          <div class="tl-dot-wrap"><div class="tl-dot"></div></div>
+          <div class="tl-line-seg"></div>
+        </div>
+        <div class="tl-icon-col">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        </div>
+        <div class="tl-content">
+          <div class="tl-date">February 16, 2026</div>
+          <div class="tl-label-en">The Search for the Ring</div>
+          <div class="tl-label-es">Leo and I compared quotes from jewelers. Every detail had to be perfect.</div>
+        </div>
+      </div>
+
+      <div class="tl-item">
+        <div class="tl-line-col">
+          <div class="tl-dot-wrap"><div class="tl-dot"></div></div>
+          <div class="tl-line-seg"></div>
+        </div>
+        <div class="tl-icon-col">
+          <svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+        </div>
+        <div class="tl-content">
+          <div class="tl-date">February 19, 2026</div>
+          <div class="tl-label-en">Ambar</div>
+          <div class="tl-label-es">I walked in and placed the order. Your ring was on its way.</div>
+        </div>
+      </div>
+
+      <div class="tl-item">
+        <div class="tl-line-col">
+          <div class="tl-dot-wrap"><div class="tl-dot"></div></div>
+          <div class="tl-line-seg"></div>
+        </div>
+        <div class="tl-icon-col">
+          <svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+        </div>
+        <div class="tl-content">
+          <div class="tl-date">March 2, 2026</div>
+          <div class="tl-label-en">The Design Revealed</div>
+          <div class="tl-label-es">They sent me the design. Seeing it for the first time — I smiled.</div>
+        </div>
+      </div>
+
+      <div class="tl-item">
+        <div class="tl-line-col">
+          <div class="tl-dot-wrap"><div class="tl-dot"></div></div>
+          <div class="tl-line-seg"></div>
+        </div>
+        <div class="tl-icon-col">
+          <svg viewBox="0 0 24 24"><path d="M21 10H3M16 2v4M8 2v4"/><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01M16 18h.01"/></svg>
+        </div>
+        <div class="tl-content">
+          <div class="tl-date">March 9, 2026</div>
+          <div class="tl-label-en">The Ring</div>
+          <div class="tl-label-es">It was ready. In my hands, finally. Now I just needed you.</div>
+        </div>
+      </div>
+
+      <div class="tl-item highlight">
+        <div class="tl-line-col">
+          <div class="tl-dot-wrap"><div class="tl-dot"></div></div>
+        </div>
+        <div class="tl-icon-col">
+          <svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+        </div>
+        <div class="tl-content">
+          <div class="tl-date" id="tl-today-date"></div>
+          <div class="tl-label-en">Today</div>
+          <div class="tl-label-es">Will you marry me?</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
